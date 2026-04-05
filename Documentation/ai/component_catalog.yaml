@@ -1,0 +1,67 @@
+# Component Catalog
+# Machine-readable service/component index for agent consumption.
+# Update when adding, removing, or changing service dependencies.
+
+services:
+  AuthService:
+    path: src/core/services/auth.service.ts
+    purpose: "User authentication: login, register, refresh, logout"
+    depends_on: [ApiClient, SessionStore, TokenManager]
+    depended_on_by: [useAuth, AuthGuard]
+    error_types: [AuthError]
+    api_routes:
+      - POST /api/auth/login
+      - POST /api/auth/register
+      - POST /api/auth/refresh
+      - DELETE /api/auth/session
+    invariants:
+      - "Always clears tokens on logout, even if API call fails"
+      - "Refresh is attempted once before treating token as expired"
+
+  ApiClient:
+    path: src/core/services/api-client.ts
+    purpose: "Base HTTP client with auth headers, retry, and error normalization"
+    depends_on: [TokenManager]
+    depended_on_by: [AuthService]
+    error_types: [ApiError, NetworkError]
+    invariants:
+      - "Retries 3x with exponential backoff for 5xx and network errors"
+      - "Never retries 4xx errors"
+      - "Attaches Authorization header from TokenManager on every request"
+
+  SessionStore:
+    path: src/core/services/session-store.ts
+    purpose: "Token persistence via localStorage with memory cache"
+    depends_on: []
+    depended_on_by: [AuthService, AuthGuard]
+    invariants:
+      - "Memory cache is source of truth; localStorage is sync backup"
+      - "clear() removes both memory and localStorage entries"
+
+  TokenManager:
+    path: src/core/services/token-manager.ts
+    purpose: "JWT decode, expiry check, refresh orchestration"
+    depends_on: []
+    depended_on_by: [ApiClient, AuthService]
+    invariants:
+      - "isExpired() includes 30s buffer before actual expiry"
+      - "Refresh lock prevents concurrent refresh attempts"
+
+hooks:
+  useAuth:
+    path: src/features/auth/hooks/useAuth.ts
+    purpose: "React hook wrapping AuthService for login, register, logout"
+    wraps: AuthService
+    provides: [user, isAuthenticated, isLoading, error, login, register, logout]
+
+# Template for adding new entries:
+#
+#   ServiceName:
+#     path: src/...
+#     purpose: "One-line description"
+#     depends_on: [...]
+#     depended_on_by: [...]
+#     error_types: [...]          # optional
+#     api_routes: [...]           # optional
+#     invariants:                 # optional
+#       - "Rule that must always hold"

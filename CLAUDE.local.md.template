@@ -1,0 +1,106 @@
+# Local Development Settings
+
+Copy this file to `CLAUDE.local.md` and update paths for your machine.
+`CLAUDE.local.md` is gitignored — it contains machine-specific paths and preferences.
+
+## MCP Tool Priority
+
+This project has 8 MCP servers. Use them instead of Bash for code search.
+
+**BANNED for code search:** Do NOT use `grep`, `find`, `ls | awk`,
+`wc -l`, or any Bash command to search code or list files.
+
+| Task | MUST Use | NEVER Use |
+|------|----------|-----------|
+| General knowledge query | Mind `mind_search` | Manual multi-tool search |
+| Find code / patterns | Zoekt `search` | `grep -r`, Bash grep |
+| Find files by name | Zoekt `search` / `Glob` | `find`, `ls`, Bash |
+| Feature size/stats | Feature Meta `feature_get` | `wc -l`, `find -exec` |
+| Service metadata | Feature Meta `component_get` | Reading catalog YAML |
+| Find documentation | Knowledge RAG `knowledge_search` | Grep over docs |
+| Structural patterns | Scantool `search_structures` | Zoekt for AST queries |
+| Find symbol def | LSP `definition` | Grep for "class Foo" |
+| Find all usages | LSP `references` | Grep for symbol name |
+| Blast radius | Change-Impact `impact_query` | Multi-tool manual search |
+| Session orientation | Context Bundle `bundle_status` | git log |
+
+**Bash is ONLY for:** git commands, `npm` scripts, and running `node` scripts.
+
+### Search Ladder (Priority Order)
+
+0. **General question?** -> Mind `mind_search`
+1. **Know the symbol name?** -> LSP `definition`
+2. **Need all usages?** -> LSP `references`
+3. **Structural patterns?** (components, hooks) -> Scantool `search_structures`
+4. **Code with file/language filters?** -> Zoekt `search`
+5. **Find files by name?** -> Zoekt or `Glob`
+6. **Conceptual/architectural info?** -> Knowledge `knowledge_search`
+7. **Feature scope/file list?** -> Feature Meta `feature_get`
+8. **Simple text in known file?** -> `Grep`
+9. **Blast radius?** -> Change-Impact `impact_query`
+
+## TypeScript LSP
+
+Provides semantic code navigation. No build step needed (unlike Swift LSP).
+
+| Task | MCP Tool |
+|------|----------|
+| Find definition | `definition` |
+| Find references | `references` |
+| Get diagnostics | `diagnostics` |
+| Hover info | `hover` |
+| Rename symbol | `rename_symbol` |
+
+**Requires:** `npm install` (for node_modules type resolution).
+
+## Zoekt (Indexed Code Search)
+
+| Task | MCP Tool |
+|------|----------|
+| Code search | `search` |
+| Count matches | `search` (mode=count) |
+
+**Web-specific queries:**
+- `.tsx` files: use `lang:TSX` (not `lang:TypeScript`)
+- Scope to source: `f:src/`
+- Exclude tests: `-f:.*\.test\.`
+- React components: `lang:TSX function\s+\w+.*Props`
+- Custom hooks: `f:hooks/ use[A-Z]`
+
+**Auto-reindex:** Git hooks run `zoekt-git-index` on commit/merge.
+Install: `bash scripts/install-hooks.sh`
+
+## Scantool (Structural Search)
+
+| Task | MCP Tool |
+|------|----------|
+| Find structures | `search_structures` |
+| File structure | `scan_file` |
+| Directory overview | `scan_directory` |
+
+**Use for:** Finding all React components, custom hooks, exported types,
+decorated classes — anything that spans multiple lines or targets
+language-specific syntax.
+
+## Knowledge RAG + Mind
+
+| Task | MCP Tool |
+|------|----------|
+| Cross-system search | `mind_search` |
+| Docs-only search | `knowledge_search` |
+| Rebuild index | `knowledge_reindex` |
+
+**Requires Ollama running:** `ollama serve &`
+
+## Quick Decision Guide
+
+- General question about past work? -> `mind_search`
+- Starting in unfamiliar area? -> `mind_search` or `knowledge_search`
+- Need feature file scope? -> `feature_get`
+- Looking for all components with a pattern? -> `search_structures`
+- Need exact symbol definition? -> LSP `definition`
+
+## Local Paths
+
+- Project root: `/path/to/this/project`
+- Zoekt web server: `http://127.0.0.1:6070`

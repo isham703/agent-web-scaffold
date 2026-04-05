@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+
+# MCP config — local only, never committed (contains machine-specific paths)
+.mcp.json
+.kiro/settings/mcp.json
+
+# Agent artifacts (machine-specific)
+.agent/
+.claude/.health-gate-passed
+CLAUDE.local.md

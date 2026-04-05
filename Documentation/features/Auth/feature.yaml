@@ -1,0 +1,41 @@
+name: Auth
+purpose: "User authentication, session management, and OAuth providers"
+entry_point: src/features/auth/AuthPage.tsx
+state_owner: src/features/auth/hooks/useAuth.ts
+hooks:
+  - useAuth
+  - useSession
+services_used:
+  - AuthService
+  - SessionStore
+  - TokenManager
+  - ApiClient
+api_routes:
+  - POST /api/auth/login
+  - POST /api/auth/register
+  - POST /api/auth/refresh
+  - DELETE /api/auth/session
+failure_modes:
+  - when: "Invalid credentials"
+    user_visible: "Inline error: Invalid email or password"
+    degradation: "User cannot log in until correct credentials entered"
+  - when: "OAuth provider unreachable"
+    user_visible: "Toast error, falls back to email login"
+    degradation: "Social login unavailable"
+  - when: "Token refresh fails"
+    user_visible: "Redirect to login page"
+    degradation: "Session lost, user must re-authenticate"
+  - when: "Rate limited (429)"
+    user_visible: "Too many attempts, try again in X minutes"
+    degradation: "Login blocked temporarily"
+guards:
+  - name: AuthGuard
+    logic: "Requires valid session"
+    redirect: "/login"
+  - name: GuestOnly
+    logic: "Rejects authenticated users"
+    redirect: "/dashboard"
+file_count: 8
+related:
+  golden_paths: [auth-login-flow]
+  adrs: []
